@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +19,10 @@ import {
   Image as ImageIcon,
   Upload,
   Camera,
+  TrendingUp,
+  Loader2,
+  Globe,
+  Map,
 } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
@@ -19,8 +30,37 @@ import { useRef, useState, useEffect } from "react";
 export default function Home() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [analysisType, setAnalysisType] = useState<"coordinates" | "image">(
+    "coordinates"
+  );
+
+  const [map, setMap] = useState<null>(null);
+  const [mapError, setMapError] = useState(true);
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      if (file.size > 10 * 1024 * 1024 || !file.type.startsWith("image/")) {
+        setAlertMessage(
+          file.size > 10 * 1024 * 1024
+            ? "Image size must be less than 10MB"
+            : "Please select a valid image file"
+        );
+        setShowAlert(true);
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -99,7 +139,7 @@ export default function Home() {
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={() => {}}
+                        onChange={handleImageUpload}
                         className="hidden"
                       />
                       {!imagePreview ? (
@@ -125,16 +165,85 @@ export default function Home() {
                           </Button>
                         </div>
                       ) : (
-                        <div></div>
+                        <div className="space-y-4">
+                          <Image
+                            src={imagePreview}
+                            width={1000}
+                            height={1000}
+                            alt="Image Preview"
+                            className="max-h-48 mx-auto rounded-lg shadow-sm"
+                          />
+                        </div>
                       )}
                     </div>
+                    <Button onClick={() => {}} className="w-full">
+                      <ImageIcon className="mr-2 h-4" />
+                      Analyze Image
+                    </Button>
                   </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
+
+          <Card className="shadow-lg border-0 bg-white/80  backdrop-blur-sm ">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
+                Risk Assessment
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+                  <p className="text-slate-600">
+                    {analysisType === "coordinates"
+                      ? "Analyzing Coordinates..."
+                      : "Analyzing Image..."}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-green-600" />
+              Interactive Map
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mapError ? (
+              <div className="w-full h-80 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center">
+                <Map className="h-16 w-16 text-slate-300 mb-4" />
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                  Map Not Available
+                </h3>
+                <p>
+                  To enable the interactive map, set up a Google Maps API key
+                </p>
+              </div>
+            ) : (
+              <div
+                ref={mapRef}
+                className="w-full h-80 rounded-lg border border-slate-200"
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      <AlertDialog open={showAlert} onOpenChange={setShowAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Input Error</AlertDialogTitle>
+            <AlertDialogDescription>{alertMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
