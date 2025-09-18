@@ -57,7 +57,7 @@ export default function Home() {
   const [mapError, setMapError] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const API_BASE_URL = "http://localhost:8001";
+  const API_BASE_URL = "https://ai-flood-risk-backend.onrender.com";
 
   // API CALLS
 
